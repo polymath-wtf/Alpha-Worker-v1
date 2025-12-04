@@ -108,7 +108,6 @@ RUN comfy-node-install \
     comfyui_fill-nodes \
     comfyui-ic-light \
     comfyui-art-venture \
-    was-node-suite-comfyui \
     efficiency-nodes-comfyui
 
 # Copy helper script to switch Manager network mode at container start
