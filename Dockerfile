@@ -106,7 +106,10 @@ RUN comfy-node-install \
     comfyui-wanmoeksampler \
     comfyui_ultimatesdupscale \
     comfyui_fill-nodes \
-    comfyui-ic-light
+    comfyui-ic-light \
+    comfyui-art-venture \
+    was-node-suite-comfyui \
+    efficiency-nodes-comfyui
 
 # Copy helper script to switch Manager network mode at container start
 COPY scripts/comfy-manager-set-mode.sh /usr/local/bin/comfy-manager-set-mode
