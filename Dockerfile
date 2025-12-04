@@ -101,7 +101,7 @@ RUN comfy-node-install \
     comfyui_layerstyle \
     comfyui_essentials \
     cg-use-everywhere \
-#    comfyui-tripleksampler \ not in https://registry.comfy.org/ru
+#    comfyui-tripleksampler \ not in https://registry.comfy.org/ru 
     comfyui-mediamixer \
     comfyui-wanmoeksampler \
     comfyui_ultimatesdupscale \
