@@ -14,12 +14,12 @@ echo "worker-comfyui: Starting ComfyUI"
 
 # Serve the API and don't shutdown the container
 if [ "$SERVE_API_LOCALLY" == "true" ]; then
-    python -u /comfyui/main.py --disable-auto-launch --disable-metadata --listen --verbose "${COMFY_LOG_LEVEL}" --log-stdout --highvram &
+    python -u /comfyui/main.py --disable-auto-launch --disable-metadata --highvram --listen --verbose "${COMFY_LOG_LEVEL}" --log-stdout &
 
     echo "worker-comfyui: Starting RunPod Handler"
     python -u /handler.py --rp_serve_api --rp_api_host=0.0.0.0
 else
-    python -u /comfyui/main.py --disable-auto-launch --disable-metadata --verbose "${COMFY_LOG_LEVEL}" --log-stdout --highvram &
+    python -u /comfyui/main.py --disable-auto-launch --disable-metadata --highvram --verbose "${COMFY_LOG_LEVEL}" --log-stdout &
 
     echo "worker-comfyui: Starting RunPod Handler"
     python -u /handler.py
