@@ -109,6 +109,8 @@ RUN comfy-node-install \
     comfyui-ic-light \
     comfyui-art-venture \
     efficiency-nodes-comfyui
+# Install custom node from GitHub (not in registry)
+RUN git clone https://github.com/polymath-wtf/ComfyUI-Polymath-Vibenodes.git /comfyui/custom_nodes/ComfyUI-Polymath-Vibenodes
 
 # Copy helper script to switch Manager network mode at container start
 COPY scripts/comfy-manager-set-mode.sh /usr/local/bin/comfy-manager-set-mode
@@ -158,6 +160,8 @@ RUN if [ "$MODEL_TYPE" = "flux1-dev" ]; then \
       wget -q -O models/clip/t5xxl_fp8_e4m3fn.safetensors https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors && \
       wget -q --header="Authorization: Bearer ${HUGGINGFACE_ACCESS_TOKEN}" -O models/vae/ae.safetensors https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/ae.safetensors; \
     fi
+
+
 
 # Stage 3: Final image
 FROM base AS final
