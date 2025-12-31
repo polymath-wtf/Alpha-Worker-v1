@@ -91,7 +91,7 @@ RUN comfy-node-install \
     comfymath \
     rgthree-comfy \
     comfyui-gguf \
-    comfyui-wanvideowrapper \
+#    comfyui-wanvideowrapper \
 #    comfyui-kjnodes \
     comfyui-multigpu \
     comfyui-easy-use \
@@ -160,14 +160,18 @@ RUN if [ "$MODEL_TYPE" = "Wan_i2v_dasiwa" ]; then \
       wget -q -O models/loras/SVI_Wan2.2-I2V-A14B_low_noise_lora_v2.0_pro.safetensors https://huggingface.co/vita-video-gen/svi-model/resolve/main/version-2.0/SVI_Wan2.2-I2V-A14B_low_noise_lora_v2.0_pro.safetensors; \
     fi
     
-RUN if [ "$MODEL_TYPE" = "flux1-dev" ]; then \
-      wget -q --header="Authorization: Bearer ${HUGGINGFACE_ACCESS_TOKEN}" -O models/unet/flux1-dev.safetensors https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/flux1-dev.safetensors && \
+RUN if [ "$MODEL_TYPE" = "flux1-krea" ]; then \
+      wget -q --header="Authorization: Bearer ${HUGGINGFACE_ACCESS_TOKEN}" -O models/unet/flux1-krea-dev_fp8_scaled.safetensors https://huggingface.co/Comfy-Org/FLUX.1-Krea-dev_ComfyUI/resolve/main/split_files/diffusion_models/flux1-krea-dev_fp8_scaled.safetensors && \
       wget -q -O models/clip/clip_l.safetensors https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors && \
       wget -q -O models/clip/t5xxl_fp8_e4m3fn.safetensors https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors && \
       wget -q --header="Authorization: Bearer ${HUGGINGFACE_ACCESS_TOKEN}" -O models/vae/ae.safetensors https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/ae.safetensors; \
     fi
 
-
+# Install ComfyUI-WanVideoWrapper at SVI commit
+RUN git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git /comfyui/custom_nodes/ComfyUI-WanVideoWrapper && \
+    cd /comfyui/custom_nodes/ComfyUI-WanVideoWrapper && \
+    git checkout f28e7da442b03fa32918e0251ceb403e80fedf1d && \
+    uv pip install -r requirements.txt
 
 # Stage 3: Final image
 FROM base AS final
