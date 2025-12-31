@@ -129,7 +129,7 @@ FROM base AS downloader
 ARG HUGGINGFACE_ACCESS_TOKEN
 ARG CIVITAI_ACCESS_TOKEN
 # Set default model type if none is provided
-ARG MODEL_TYPE=Wan_i2v_dasiwa
+ARG MODEL_TYPE=flux1-krea
 
 # Change working directory to ComfyUI
 WORKDIR /comfyui
