@@ -491,6 +491,46 @@ def get_image_data(filename, subfolder, image_type):
         )
         return None
 
+def _coerce_mapping(value):
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, list):
+        merged = {}
+        # list of {key: value} dicts
+        if all(isinstance(item, dict) for item in value):
+            for item in value:
+                if len(item) == 1:
+                    merged.update(item)
+            if merged:
+                return merged
+        # list of [key, value] pairs
+        if all(
+            isinstance(item, (list, tuple)) and len(item) == 2 for item in value
+        ):
+            try:
+                return {str(k): v for k, v in value}
+            except Exception:
+                return {}
+    return {}
+
+
+def _normalize_history(history, prompt_id):
+    if isinstance(history, dict):
+        return history
+    if isinstance(history, list):
+        for item in history:
+            if isinstance(item, dict) and prompt_id in item:
+                return item
+        for item in history:
+            if isinstance(item, dict) and item.get("prompt_id") == prompt_id:
+                return {prompt_id: item}
+        if (
+            len(history) == 1
+            and isinstance(history[0], dict)
+            and ("outputs" in history[0] or "prompt" in history[0])
+        ):
+            return {prompt_id: history[0]}
+    return None
 
 def handler(job):
     """
@@ -505,6 +545,7 @@ def handler(job):
     job_input = job["input"]
     job_id = job["id"]
 
+    
     # Make sure that the input is valid
     validated_data, error_message = validate_input(job_input)
     if error_message:
