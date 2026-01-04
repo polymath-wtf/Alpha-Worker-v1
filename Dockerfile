@@ -1,5 +1,5 @@
 # Build argument for base image selection
-ARG BASE_IMAGE=nvidia/cuda:12.6.3-cudnn-runtime-ubuntu24.04
+ARG BASE_IMAGE=nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04
 
 # Stage 1: Base image with common dependencies
 FROM ${BASE_IMAGE} AS base
@@ -8,7 +8,8 @@ FROM ${BASE_IMAGE} AS base
 ARG COMFYUI_VERSION=latest
 ARG CUDA_VERSION_FOR_COMFY
 ARG ENABLE_PYTORCH_UPGRADE=false
-ARG PYTORCH_INDEX_URL
+ARG PYTORCH_INDEX_URL=
+# Abracadabra
 
 # Prevents prompts from packages asking for user input during installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -23,6 +24,8 @@ ENV CMAKE_BUILD_PARALLEL_LEVEL=8
 RUN apt-get update && apt-get install -y \
     python3.12 \
     python3.12-venv \
+    python3.12-dev \
+    build-essential \
     git \
     wget \
     libgl1 \
@@ -58,9 +61,15 @@ RUN if [ -n "${CUDA_VERSION_FOR_COMFY}" ]; then \
 
 # Upgrade PyTorch if needed (for newer CUDA versions)
 RUN if [ "$ENABLE_PYTORCH_UPGRADE" = "true" ]; then \
-      uv pip install --force-reinstall torch torchvision torchaudio --index-url ${PYTORCH_INDEX_URL}; \
+    uv pip install --force-reinstall torch torchvision torchaudio --index-url ${PYTORCH_INDEX_URL}; \
     fi
 
+# Install Triton + SageAttention
+RUN uv pip install --upgrade "triton==3.5.1" \
+    && wget -q -O /tmp/sageattention-2.2.0-cp312-cp312-linux_x86_64.whl \
+      "https://huggingface.co/Kijai/PrecompiledWheels/resolve/main/sageattention-2.2.0-cp312-cp312-linux_x86_64.whl" \
+    && uv pip install /tmp/sageattention-2.2.0-cp312-cp312-linux_x86_64.whl \
+    && rm -f /tmp/sageattention-2.2.0-cp312-cp312-linux_x86_64.whl
 # Change working directory to ComfyUI
 WORKDIR /comfyui
 
@@ -93,7 +102,7 @@ RUN comfy-node-install \
     comfyui-gguf \
 #    comfyui-wanvideowrapper \
 #    comfyui-kjnodes \
-    comfyui-multigpu \
+#    comfyui-multigpu \
     comfyui-easy-use \
     was-node-suite-comfyui \
     comfyui-custom-scripts \
@@ -116,7 +125,7 @@ RUN git clone https://github.com/kijai/ComfyUI-KJNodes.git /comfyui/custom_nodes
     cd /comfyui/custom_nodes/ComfyUI-KJNodes && \
     git checkout 7b1327192e4729085788a3020a9cbb095e0c7811 && \
     uv pip install -r requirements.txt
-    # Install ComfyUI-WanVideoWrapper at SVI commit
+    # Install ComfyUI-WanVideoWrapper SVI commit
 RUN git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git /comfyui/custom_nodes/ComfyUI-WanVideoWrapper && \
     cd /comfyui/custom_nodes/ComfyUI-WanVideoWrapper && \
     git checkout f28e7da442b03fa32918e0251ceb403e80fedf1d && \
@@ -135,7 +144,7 @@ FROM base AS downloader
 ARG HUGGINGFACE_ACCESS_TOKEN
 ARG CIVITAI_ACCESS_TOKEN
 # Set default model type if none is provided
-ARG MODEL_TYPE=Wan_i2v_dasiwa
+ARG MODEL_TYPE=fast
 
 # Change working directory to ComfyUI
 WORKDIR /comfyui
@@ -172,7 +181,11 @@ RUN if [ "$MODEL_TYPE" = "flux1-krea" ]; then \
       wget -q -O models/clip/t5xxl_fp8_e4m3fn.safetensors https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors && \
       wget -q -O models/vae/ae.safetensors https://huggingface.co/Seryoger/Parique_v1/resolve/main/ae.safetensors; \
     fi
-    
+
+RUN if [ "$MODEL_TYPE" = "fast" ]; then \
+      wget -q -O models/vae/wan_2.1_vae.safetensors https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors; \
+    fi
+
 # Stage 3: Final image
 FROM base AS final
 
