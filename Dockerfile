@@ -144,7 +144,7 @@ FROM base AS downloader
 ARG HUGGINGFACE_ACCESS_TOKEN
 ARG CIVITAI_ACCESS_TOKEN
 # Set default model type if none is provided
-ARG MODEL_TYPE=fast
+ARG MODEL_TYPE=Wan_i2v_dasiwa
 
 # Change working directory to ComfyUI
 WORKDIR /comfyui
@@ -164,15 +164,15 @@ RUN if [ "$MODEL_TYPE" = "Wan_i2v_default" ]; then \
     fi
 
 RUN if [ "$MODEL_TYPE" = "Wan_i2v_dasiwa" ]; then \
-      wget -q -O models/unet/DasiwaWAN22I2V14BV8V1_midnightflirtHighV7.safetensors https://civitai.com/api/download/models/2388548?token=a547f3f6fd542f90d0c18ab7aa51d2f7 && \
-      wget -q -O models/unet/DasiwaWAN22I2V14BV8V1_midnightflirtLowV7.safetensors https://civitai.com/api/download/models/2388627?token=a547f3f6fd542f90d0c18ab7aa51d2f7 && \
+      wget -q -O models/unet/DasiwaWAN22I2V14BV8V1_tastysinHighV81.safetensors https://civitai.com/api/download/models/2512098?token=a547f3f6fd542f90d0c18ab7aa51d2f7 && \
+      wget -q -O models/unet/DasiwaWAN22I2V14BV8V1_tastysinLowV81.safetensors https://civitai.com/api/download/models/2512333?token=a547f3f6fd542f90d0c18ab7aa51d2f7 && \
       wget -q -O models/clip/umt5_xxl_fp8_e4m3fn_scaled.safetensors https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors && \
-      wget -q -O models/clip_vision/clip_vision_h.safetensors https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/clip_vision/clip_vision_h.safetensors && \
+#      wget -q -O models/clip_vision/clip_vision_h.safetensors https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/clip_vision/clip_vision_h.safetensors && \
       wget -q -O models/vae/wan_2.1_vae.safetensors https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors && \
-      wget -q -O models/loras/wan2.2_i2v_A14b_high_noise_lora_rank64_lightx2v_4step_1022.safetensors https://huggingface.co/lightx2v/Wan2.2-Distill-Loras/resolve/main/wan2.2_i2v_A14b_high_noise_lora_rank64_lightx2v_4step_1022.safetensors && \
-      wget -q -O models/loras/wan2.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step_1022.safetensors https://huggingface.co/lightx2v/Wan2.2-Distill-Loras/resolve/main/wan2.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step_1022.safetensors && \
-      wget -q -O models/loras/SVI_Wan2.2-I2V-A14B_high_noise_lora_v2.0_pro.safetensors https://huggingface.co/vita-video-gen/svi-model/resolve/main/version-2.0/SVI_Wan2.2-I2V-A14B_high_noise_lora_v2.0_pro.safetensors && \
-      wget -q -O models/loras/SVI_Wan2.2-I2V-A14B_low_noise_lora_v2.0_pro.safetensors https://huggingface.co/vita-video-gen/svi-model/resolve/main/version-2.0/SVI_Wan2.2-I2V-A14B_low_noise_lora_v2.0_pro.safetensors; \
+#      wget -q -O models/loras/wan2.2_i2v_A14b_high_noise_lora_rank64_lightx2v_4step_1022.safetensors https://huggingface.co/lightx2v/Wan2.2-Distill-Loras/resolve/main/wan2.2_i2v_A14b_high_noise_lora_rank64_lightx2v_4step_1022.safetensors && \
+#      wget -q -O models/loras/wan2.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step_1022.safetensors https://huggingface.co/lightx2v/Wan2.2-Distill-Loras/resolve/main/wan2.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step_1022.safetensors && \
+      wget -q -O models/loras/SVI_v2_PRO_Wan2.2-I2V-A14B_HIGH_lora_rank_128_fp16.safetensors https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/LoRAs/Stable-Video-Infinity/v2.0/SVI_v2_PRO_Wan2.2-I2V-A14B_HIGH_lora_rank_128_fp16.safetensors && \
+      wget -q -O models/loras/SVI_v2_PRO_Wan2.2-I2V-A14B_LOW_lora_rank_128_fp16.safetensors https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/LoRAs/Stable-Video-Infinity/v2.0/SVI_v2_PRO_Wan2.2-I2V-A14B_LOW_lora_rank_128_fp16.safetensors; \
     fi
     
 RUN if [ "$MODEL_TYPE" = "flux1-krea" ]; then \
