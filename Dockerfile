@@ -120,16 +120,16 @@ RUN comfy-node-install \
     efficiency-nodes-comfyui
     
 # Install KJnodes from GitHub (manual comit)
-RUN git clone https://github.com/polymath-wtf/ComfyUI-Polymath-Vibenodes.git /comfyui/custom_nodes/ComfyUI-Polymath-Vibenodes
-RUN git clone https://github.com/kijai/ComfyUI-KJNodes.git /comfyui/custom_nodes/ComfyUI-KJNodes && \
-    cd /comfyui/custom_nodes/ComfyUI-KJNodes && \
-    git checkout 7b1327192e4729085788a3020a9cbb095e0c7811 && \
-    uv pip install -r requirements.txt
+#RUN git clone https://github.com/polymath-wtf/ComfyUI-Polymath-Vibenodes.git /comfyui/custom_nodes/ComfyUI-Polymath-Vibenodes
+#RUN git clone https://github.com/kijai/ComfyUI-KJNodes.git /comfyui/custom_nodes/ComfyUI-KJNodes && \
+#    cd /comfyui/custom_nodes/ComfyUI-KJNodes && \
+#    git checkout 7b1327192e4729085788a3020a9cbb095e0c7811 && \
+#    uv pip install -r requirements.txt
     # Install ComfyUI-WanVideoWrapper SVI commit
-RUN git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git /comfyui/custom_nodes/ComfyUI-WanVideoWrapper && \
-    cd /comfyui/custom_nodes/ComfyUI-WanVideoWrapper && \
-    git checkout f28e7da442b03fa32918e0251ceb403e80fedf1d && \
-    uv pip install -r requirements.txt
+#RUN git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git /comfyui/custom_nodes/ComfyUI-WanVideoWrapper && \
+#    cd /comfyui/custom_nodes/ComfyUI-WanVideoWrapper && \
+#    git checkout f28e7da442b03fa32918e0251ceb403e80fedf1d && \
+#    uv pip install -r requirements.txt
 
 # Copy helper script to switch Manager network mode at container start
 COPY scripts/comfy-manager-set-mode.sh /usr/local/bin/comfy-manager-set-mode
@@ -144,7 +144,7 @@ FROM base AS downloader
 ARG HUGGINGFACE_ACCESS_TOKEN
 ARG CIVITAI_ACCESS_TOKEN
 # Set default model type if none is provided
-ARG MODEL_TYPE=Wan_i2v_dasiwa
+ARG MODEL_TYPE=fast
 
 # Change working directory to ComfyUI
 WORKDIR /comfyui
