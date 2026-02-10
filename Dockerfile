@@ -100,9 +100,9 @@ RUN comfy-node-install \
     comfymath \
     rgthree-comfy \
     comfyui-gguf \
-#    comfyui-wanvideowrapper \
-#    comfyui-kjnodes \
-#    comfyui-multigpu \
+    comfyui-wanvideowrapper \
+    comfyui-kjnodes \
+    comfyui-multigpu \
     comfyui-easy-use \
     was-node-suite-comfyui \
     comfyui-custom-scripts \
