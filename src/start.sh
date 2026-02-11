@@ -9,18 +9,28 @@ comfy-manager-set-mode offline || echo "worker-comfyui - Could not set ComfyUI-M
 
 echo "worker-comfyui: Starting ComfyUI"
 
+# Python & PyTorch info
+python --version
+python -c "import torch; print(f'PyTorch: {torch.__version__}')"
+python -c "import torch; print(f'CUDA Available: {torch.cuda.is_available()}')"
+# Check driver version and CUDA compatibility
+nvidia-smi --query-gpu=driver_version --format=csv
+# Verify CUDA support
+python -c "import torch; print(torch.cuda.is_available())"
+
 # Allow operators to tweak verbosity; default is DEBUG.
 : "${COMFY_LOG_LEVEL:=DEBUG}"
 
 # Serve the API and don't shutdown the container
 if [ "$SERVE_API_LOCALLY" == "true" ]; then
-    python -u /comfyui/main.py --disable-auto-launch --normalvram --use-sage-attention --disable-metadata --listen --verbose "${COMFY_LOG_LEVEL}" --log-stdout &
+    python -u /comfyui/main.py --disable-auto-launch --normalvram --reserve-vram 1 --disable-smart-memory --disable-metadata --listen --verbose "${COMFY_LOG_LEVEL}" --log-stdout &
 
     echo "worker-comfyui: Starting RunPod Handler"
     python -u /handler.py --rp_serve_api --rp_api_host=0.0.0.0
 else
-    python -u /comfyui/main.py --disable-auto-launch --normalvram --use-sage-attention --disable-metadata --verbose "${COMFY_LOG_LEVEL}" --log-stdout &
+    python -u /comfyui/main.py --disable-auto-launch --normalvram --reserve-vram 1 --disable-smart-memory --disable-metadata --verbose "${COMFY_LOG_LEVEL}" --log-stdout &
 
     echo "worker-comfyui: Starting RunPod Handler"
     python -u /handler.py
 fi
+
