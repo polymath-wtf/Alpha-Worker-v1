@@ -119,10 +119,13 @@ RUN comfy-node-install \
     comfyui_fill-nodes \
     comfyui-ic-light \
     comfyui-art-venture \
-    efficiency-nodes-comfyui
+    efficiency-nodes-comfyui \
+    comfyUI_fizzNodes \
+    comfyui-painterfluxImageedit
     
 # Install KJnodes from GitHub (manual comit)
-#RUN git clone https://github.com/polymath-wtf/ComfyUI-Polymath-Vibenodes.git /comfyui/custom_nodes/ComfyUI-Polymath-Vibenodes
+RUN git clone https://github.com/polymath-wtf/ComfyUI-Polymath-Vibenodes.git /comfyui/custom_nodes/ComfyUI-Polymath-Vibenodes
+
 #RUN git clone https://github.com/kijai/ComfyUI-KJNodes.git /comfyui/custom_nodes/ComfyUI-KJNodes && \
 #    cd /comfyui/custom_nodes/ComfyUI-KJNodes && \
 #    git checkout 7b1327192e4729085788a3020a9cbb095e0c7811 && \
@@ -184,6 +187,19 @@ RUN if [ "$MODEL_TYPE" = "flux1-krea" ]; then \
       wget -q -O models/vae/ae.safetensors https://huggingface.co/Seryoger/Parique_v1/resolve/main/ae.safetensors; \
     fi
 
+RUN if [ "$MODEL_TYPE" = "flux2-klein-9b-fp8" ]; then \
+      wget -q -O models/unet/flux-2-klein-9b-fp8.safetensors https://huggingface.co/Seryoger/Flux_2_dev_fp8/resolve/main/unet/flux-2-klein-9b-fp8.safetensors && \
+      wget -q -O models/clip/qwen_3_8b_fp8mixed.safetensors https://huggingface.co/Comfy-Org/vae-text-encorder-for-flux-klein-9b/resolve/main/split_files/text_encoders/qwen_3_8b_fp8mixed.safetensors && \
+      wget -q -O models/vae/flux2-vae.safetensors https://huggingface.co/Comfy-Org/vae-text-encorder-for-flux-klein-9b/resolve/main/split_files/vae/flux2-vae.safetensors; \
+    fi
+
+RUN if [ "$MODEL_TYPE" = "z-image-turbo" ]; then \
+      wget -q -O models/text_encoders/qwen_3_4b.safetensors https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/text_encoders/qwen_3_4b.safetensors && \
+      wget -q -O models/diffusion_models/z_image_turbo_bf16.safetensors https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/diffusion_models/z_image_turbo_bf16.safetensors && \
+      wget -q -O models/vae/ae.safetensors https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/vae/ae.safetensors && \
+      wget -q -O models/model_patches/Z-Image-Turbo-Fun-Controlnet-Union.safetensors https://huggingface.co/alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union/resolve/main/Z-Image-Turbo-Fun-Controlnet-Union.safetensors; \
+    fi
+    
 RUN if [ "$MODEL_TYPE" = "fast" ]; then \
       wget -q -O models/vae/wan_2.1_vae.safetensors https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors; \
     fi
