@@ -70,7 +70,6 @@ RUN uv pip install --upgrade "triton==3.5.1" \
       "https://huggingface.co/Kijai/PrecompiledWheels/resolve/refs%2Fpr%2F2/sageattention-2.1.1-cp312-cp312-linux_x86_64.whl" \
     && uv pip install /tmp/sageattention-2.1.1-cp312-cp312-linux_x86_64.whl \
     && rm -f /tmp/sageattention-2.1.1-cp312-cp312-linux_x86_64.whl \
-    && python -c "import sageattention; print('SageAttention version:', sageattention.__version__)" \
     && python -c "from sageattention import sageattn; print('sageattn import OK')"
 
 # Change working directory to ComfyUI
