@@ -1,12 +1,12 @@
 # Build argument for base image selection
-ARG BASE_IMAGE=nvidia/cuda:13.0.2-cudnn-runtime-ubuntu24.04
+ARG BASE_IMAGE=nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04
 
 # Stage 1: Base image with common dependencies
 FROM ${BASE_IMAGE} AS base
 
 # Build arguments for this stage with sensible defaults for standalone builds
-# ARG COMFYUI_VERSION=latest
-ARG COMFYUI_COMMIT=6648ab68bc934a185c90a2a872c87dc64d093751
+ARG COMFYUI_VERSION=v0.13.0
+#ARG COMFYUI_COMMIT=6648ab68bc934a185c90a2a872c87dc64d093751
 ARG CUDA_VERSION_FOR_COMFY
 # ARG ENABLE_PYTORCH_UPGRADE=false
 ARG PYTORCH_INDEX_URL
@@ -54,16 +54,15 @@ ENV PATH="/opt/venv/bin:${PATH}"
 RUN uv pip install comfy-cli pip setuptools wheel
 
 # Clone ComfyUI at a specific commit for reproducible builds
-RUN git clone https://github.com/comfyanonymous/ComfyUI.git /comfyui \
-    && cd /comfyui \
-    && git checkout ${COMFYUI_COMMIT} \
-    && uv pip install -r requirements.txt
+RUN if [ -n "${CUDA_VERSION_FOR_COMFY}" ]; then \
+      /usr/bin/yes | comfy --workspace /comfyui install --version "${COMFYUI_VERSION}" --cuda-version "${CUDA_VERSION_FOR_COMFY}" --nvidia; \
+    else \
+      /usr/bin/yes | comfy --workspace /comfyui install --version "${COMFYUI_VERSION}" --nvidia; \
+    fi
 
-# Install PyTorch with specific CUDA version if needed
-RUN if [ -n "${CUDA_VERSION_FOR_COMFY}" ] && [ -n "${PYTORCH_INDEX_URL}" ]; then \
+# Upgrade PyTorch if needed (for newer CUDA versions)
+RUN if [ "$ENABLE_PYTORCH_UPGRADE" = "true" ]; then \
       uv pip install --force-reinstall torch torchvision torchaudio --index-url ${PYTORCH_INDEX_URL}; \
-    elif [ -n "${CUDA_VERSION_FOR_COMFY}" ]; then \
-      uv pip install --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu${CUDA_VERSION_FOR_COMFY}; \
     fi
 
 # Install Triton + SageAttention
