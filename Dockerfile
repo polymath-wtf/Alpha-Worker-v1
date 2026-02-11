@@ -9,7 +9,7 @@ ARG COMFYUI_VERSION=v0.13.0
 #ARG COMFYUI_COMMIT=6648ab68bc934a185c90a2a872c87dc64d093751
 ARG CUDA_VERSION_FOR_COMFY
 ARG ENABLE_PYTORCH_UPGRADE=true
-ARG PYTORCH_INDEX_URL
+ARG PYTORCH_INDEX_URL=https://download.pytorch.org/whl/cu126
 # Abracadabra
 
 # Prevents prompts from packages asking for user input during installation
