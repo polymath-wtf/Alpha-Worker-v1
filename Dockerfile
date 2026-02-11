@@ -125,7 +125,7 @@ RUN comfy-node-install \
     comfyui-painterfluxImageedit
     
 # Install KJnodes from GitHub (manual comit)
-RUN git clone https://github.com/polymath-wtf/ComfyUI-Polymath-Vibenodes.git /comfyui/custom_nodes/ComfyUI-Polymath-Vibenodes
+# RUN git clone https://github.com/polymath-wtf/ComfyUI-Polymath-Vibenodes.git /comfyui/custom_nodes/ComfyUI-Polymath-Vibenodes
 
 #RUN git clone https://github.com/kijai/ComfyUI-KJNodes.git /comfyui/custom_nodes/ComfyUI-KJNodes && \
 #    cd /comfyui/custom_nodes/ComfyUI-KJNodes && \
