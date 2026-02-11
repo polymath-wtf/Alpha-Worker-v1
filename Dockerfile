@@ -5,7 +5,7 @@ ARG BASE_IMAGE=nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04
 FROM ${BASE_IMAGE} AS base
 
 # Build arguments for this stage with sensible defaults for standalone builds
-ARG COMFYUI_VERSION=v0.13.0
+ARG COMFYUI_VERSION=latest
 #ARG COMFYUI_COMMIT=6648ab68bc934a185c90a2a872c87dc64d093751
 ARG CUDA_VERSION_FOR_COMFY
 ARG ENABLE_PYTORCH_UPGRADE=false
@@ -105,7 +105,7 @@ RUN comfy-node-install \
     comfyui-gguf \
     comfyui-wanvideowrapper \
     comfyui-kjnodes \
-    comfyui-multigpu \
+#    comfyui-multigpu \
     comfyui-easy-use \
     was-node-suite-comfyui \
     comfyui-custom-scripts \
