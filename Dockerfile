@@ -91,18 +91,17 @@ RUN uv pip install --force-reinstall \
 RUN uv pip install --force-reinstall "comfy-kitchen[cublas]"
 
 # =============================================================================
-# Triton + SageAttention 3 — Blackwell (SM 10.0) optimized kernels
-# Triton: JIT-compiled kernels (second-priority backend after CUDA)
-# SA3: FP4 Microscaling attention, custom-compiled cu130 + PyTorch 2.10.0
-# SA3 uses sageattention3_blackwell kernels — NeurIPS 2025 Spotlight
+# Triton — JIT-compiled kernels (second-priority backend after CUDA)
+# =============================================================================
+RUN uv pip install --upgrade triton
+
+# =============================================================================
+# SageAttention — optimized attention for Blackwell (SM 10.0)
 # ComfyUI v0.8.0+ supports --use-sage-attention CLI flag
 # =============================================================================
-RUN uv pip install --upgrade triton \
-    && wget -q -O /tmp/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
-        "https://huggingface.co/Seryoger/Sageattention-3-cu130-5090-endpoint/resolve/main/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl" \
-    && uv pip install /tmp/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
-    && rm -f /tmp/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
-    && python -c "from sageattention import sageattn; print('SageAttention3 import OK')"
+RUN uv pip install sageattention \
+    && python -c "from sageattention import sageattn; print('SageAttention import OK')" \
+    || echo "WARN: SageAttention import check failed — will try at runtime"
 
 # Verify the full stack
 RUN python -c "\

@@ -35,7 +35,7 @@ variable "CIVITAI_ACCESS_TOKEN" {
 
 # ─── Build groups ───
 group "default" {
-  targets = ["base", "flux2-klein", "Wan_i2v_default", "Wan_i2v_dasiwa"]
+  targets = ["base"]
 }
 
 target "base" {
