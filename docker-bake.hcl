@@ -35,7 +35,7 @@ variable "CIVITAI_ACCESS_TOKEN" {
 
 # ─── Build groups ───
 group "default" {
-  targets = ["base"]
+  targets = ["base", "flux2-klein", "Wan_i2v_default", "Wan_i2v_dasiwa"]
 }
 
 target "base" {
@@ -100,4 +100,3 @@ target "Wan_i2v_dasiwa" {
   tags = ["${DOCKERHUB_REPO}/${DOCKERHUB_IMG}:${RELEASE_VERSION}-wan-i2v-dasiwa"]
   inherits = ["base"]
 }
-
