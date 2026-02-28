@@ -104,7 +104,7 @@ RUN uv pip install --upgrade triton
 # ComfyUI v0.8.0+ supports --use-sage-attention CLI flag
 # =============================================================================
 RUN wget -q -O /tmp/sageattn3.whl \
-      https://huggingface.co/Seryoger/Sageattention-3-cu130-5090-endpoint/resolve/main/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
+        https://huggingface.co/Seryoger/Sageattention-3-cu130-5090-endpoint/resolve/main/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
     && uv pip install /tmp/sageattn3.whl \
     && python -c "from sageattention import sageattn; print('SageAttention3 import OK')" \
     && rm /tmp/sageattn3.whl
