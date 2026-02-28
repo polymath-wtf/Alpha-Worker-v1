@@ -233,9 +233,8 @@ RUN if [ "$MODEL_TYPE" = "flux1-krea" ]; then \
     fi
 
 RUN if [ "$MODEL_TYPE" = "flux2-klein" ]; then \
-      wget -q --header="Authorization: Bearer ${HUGGINGFACE_ACCESS_TOKEN}" \
-        -O models/unet/flux/flux-2-klein-9b-nvfp4.safetensors \
-        https://huggingface.co/black-forest-labs/FLUX.2-klein-9b-nvfp4/resolve/main/flux-2-klein-9b-nvfp4.safetensors && \
+       wget -q -O models/unet/flux/flux-2-klein-9b-nvfp4.safetensors \
+        https://huggingface.co/Seryoger/Sageattention-3-cu130-5090-endpoint/blob/main/flux-2-klein-9b-nvfp4.safetensors && \
 #      wget -q -O models/loras/klein/distill/klein_9B_Turbo_r64.safetensors https://civitai.com/api/download/models/2617165?token=a547f3f6fd542f90d0c18ab7aa51d2f7 && \
       wget -q -O models/clip/qwen_3_8b_fp4mixed.safetensors \
         https://huggingface.co/Comfy-Org/vae-text-encorder-for-flux-klein-9b/resolve/main/split_files/text_encoders/qwen_3_8b_fp4mixed.safetensors && \
