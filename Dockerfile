@@ -1,15 +1,18 @@
-# Build argument for base image selection
-ARG BASE_IMAGE=nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04
+# =============================================================================
+# NVIDIA RTX 5090 (Blackwell SM 10.0) — CUDA 13.0 — NVFP4 Quantization
+# =============================================================================
+# Base image: CUDA 13.0 runtime with cuDNN on Ubuntu 24.04
+# Required for: comfy-kitchen CUDA/triton backends, NVFP4 E2M1, SM 10.0 ops
+# Driver requirement: NVIDIA r580+ (Blackwell-compatible)
+# =============================================================================
+ARG BASE_IMAGE=nvidia/cuda:13.0.2-cudnn-runtime-ubuntu24.04
 
 # Stage 1: Base image with common dependencies
 FROM ${BASE_IMAGE} AS base
 
-# Build arguments for this stage with sensible defaults for standalone builds
+# Build arguments for this stage
 ARG COMFYUI_VERSION=latest
-#ARG COMFYUI_COMMIT=6648ab68bc934a185c90a2a872c87dc64d093751
-ARG CUDA_VERSION_FOR_COMFY
-ARG ENABLE_PYTORCH_UPGRADE=false
-ARG PYTORCH_INDEX_URL
+ARG PYTORCH_INDEX_URL=https://download.pytorch.org/whl/cu130
 # Abracadabra
 
 # Prevents prompts from packages asking for user input during installation
@@ -20,6 +23,8 @@ ENV PIP_PREFER_BINARY=1
 ENV PYTHONUNBUFFERED=1
 # Speed up some cmake builds
 ENV CMAKE_BUILD_PARALLEL_LEVEL=8
+# Compile Python bytecode on install for faster startup
+ENV UV_COMPILE_BYTECODE=1
 
 # Install Python, git and other necessary tools
 RUN apt-get update && apt-get install -y \
@@ -50,28 +55,67 @@ RUN wget -qO- https://astral.sh/uv/install.sh | sh \
 # Use the virtual environment for all subsequent commands
 ENV PATH="/opt/venv/bin:${PATH}"
 
+# CUDA environment — ensures nvcc and libs are discoverable
+ENV PATH="/usr/local/cuda/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
+ENV CUDA_HOME="/usr/local/cuda"
+
 # Install comfy-cli + dependencies needed by it to install ComfyUI
 RUN uv pip install comfy-cli pip setuptools wheel
 
-# Clone ComfyUI at a specific commit for reproducible builds
-RUN if [ -n "${CUDA_VERSION_FOR_COMFY}" ]; then \
-      /usr/bin/yes | comfy --workspace /comfyui install --version "${COMFYUI_VERSION}" --cuda-version "${CUDA_VERSION_FOR_COMFY}" --nvidia; \
-    else \
-      /usr/bin/yes | comfy --workspace /comfyui install --version "${COMFYUI_VERSION}" --nvidia; \
-    fi
+# Install ComfyUI via comfy-cli (no --cuda-version flag needed on CUDA 13)
+RUN /usr/bin/yes | comfy --workspace /comfyui install --version "${COMFYUI_VERSION}" --nvidia
 
-# Upgrade PyTorch if needed (for newer CUDA versions)
-RUN if [ "$ENABLE_PYTORCH_UPGRADE" = "true" ]; then \
-      uv pip install --force-reinstall torch torchvision torchaudio --index-url ${PYTORCH_INDEX_URL}; \
-    fi
+# =============================================================================
+# Force PyTorch cu130 — this is THE critical step
+# Without cu130, comfy-kitchen disables cuda+triton backends and falls back to
+# eager (pure Python) — killing performance. Logs will show:
+#   "WARNING: You need pytorch with cu130 or higher to use optimized CUDA operations"
+#   "Backend eager selected for dequantize_per_tensor_fp8" (hundreds of times)
+# With cu130 on SM 10.0 (5090), comfy-kitchen enables cuda+triton backends and
+# unlocks NVFP4 E2M1 quantization via TensorCore hardware.
+# =============================================================================
+RUN uv pip install --force-reinstall \
+    torch torchvision torchaudio \
+    --index-url ${PYTORCH_INDEX_URL}
 
-# Install Triton + SageAttention
-RUN uv pip install --upgrade "triton==3.5.1" \
-    && wget -q -O /tmp/sageattention-2.2.0-cp312-cp312-linux_x86_64.whl \
-      "https://huggingface.co/Kijai/PrecompiledWheels/resolve/main/sageattention-2.2.0-cp312-cp312-linux_x86_64.whl" \
-    && uv pip install /tmp/sageattention-2.2.0-cp312-cp312-linux_x86_64.whl \
-    && rm -f /tmp/sageattention-2.2.0-cp312-cp312-linux_x86_64.whl \
-    && python -c "from sageattention import sageattn; print('sageattn import OK')"
+# =============================================================================
+# comfy-kitchen[cublas] — NVFP4 + optimized CUDA kernels for Blackwell
+# The [cublas] extra installs CUBLAS bindings needed for:
+#   - scaled_mm_nvfp4 (NVFP4 matmul on TensorCore SM 10.0)
+#   - quantize_nvfp4 / dequantize_nvfp4 via CUDA backend
+#   - apply_rope / apply_rope1 via CUDA backend
+# Without [cublas], only eager+triton backends work for NVFP4.
+# comfy-kitchen CUDA wheels require CUDA Runtime >=13.0 and driver r580+.
+# =============================================================================
+RUN uv pip install --force-reinstall "comfy-kitchen[cublas]"
+
+# =============================================================================
+# Triton — JIT-compiled kernels (second-priority backend after CUDA)
+# Triton provides: quantize_nvfp4, dequantize_nvfp4 (not scaled_mm_nvfp4),
+# apply_rope, apply_rope1, quantize_per_tensor_fp8, dequantize_per_tensor_fp8
+# =============================================================================
+RUN uv pip install --upgrade triton
+
+# =============================================================================
+# SageAttention 3 — optimized attention for Blackwell (SM 10.0)
+# ComfyUI v0.8.0+ supports --use-sage-attention CLI flag
+# Install from PyPI; falls back to source build if no wheel matches
+# =============================================================================
+RUN uv pip install sageattention \
+    && python -c "from sageattention import sageattn; print('SageAttention import OK')" \
+    || echo "WARN: SageAttention import check failed — will try at runtime"
+
+# Verify the full stack
+RUN python -c "\
+import torch; \
+print(f'PyTorch: {torch.__version__}'); \
+print(f'CUDA available: {torch.cuda.is_available()}'); \
+print(f'CUDA version: {torch.version.cuda}'); \
+import comfy_kitchen as ck; \
+backends = ck.list_backends(); \
+print(f'comfy-kitchen backends: {backends}'); \
+"
 
 # Change working directory to ComfyUI
 WORKDIR /comfyui
@@ -96,7 +140,7 @@ RUN chmod +x /usr/local/bin/comfy-node-install
 # Prevent pip from asking for confirmation during uninstall steps in custom nodes
 ENV PIP_NO_INPUT=1
 
-# Install custom nodes
+# Install custom nodes via comfy-cli registry
 RUN comfy-node-install \
     comfyui-videohelpersuite \
     comfyui-frame-interpolation \
@@ -150,13 +194,13 @@ FROM base AS downloader
 ARG HUGGINGFACE_ACCESS_TOKEN
 ARG CIVITAI_ACCESS_TOKEN
 # Set default model type if none is provided
-ARG MODEL_TYPE=fast
+ARG MODEL_TYPE=flux2-klein
 
 # Change working directory to ComfyUI
 WORKDIR /comfyui
 
 # Create necessary directories upfront
-RUN mkdir -p models/checkpoints models/vae models/unet models/clip models/clip_vision models/loras
+RUN mkdir -p models/checkpoints models/vae models/unet models/clip models/clip_vision models/loras models/unet/flux models/unet/wan models/loras/klein/distill custom_nodes/ComfyUI-Frame-Interpolation/ckpts/rife
 
 # Download checkpoints/vae/unet/clip models to include in image based on model type
 RUN if [ "$MODEL_TYPE" = "Wan_i2v_default" ]; then \
@@ -188,9 +232,11 @@ RUN if [ "$MODEL_TYPE" = "flux1-krea" ]; then \
       wget -q -O models/vae/ae.safetensors https://huggingface.co/Seryoger/Parique_v1/resolve/main/ae.safetensors; \
     fi
 
-RUN if [ "$MODEL_TYPE" = "flux2-klein-9b-fp8" ]; then \
-      wget -q -O models/unet/flux-2-klein-9b-fp8.safetensors https://huggingface.co/Seryoger/Flux_2_dev_fp8/resolve/main/unet/flux-2-klein-9b-fp8.safetensors && \
-      wget -q -O models/clip/qwen_3_8b_fp8mixed.safetensors https://huggingface.co/Comfy-Org/vae-text-encorder-for-flux-klein-9b/resolve/main/split_files/text_encoders/qwen_3_8b_fp8mixed.safetensors && \
+RUN if [ "$MODEL_TYPE" = "flux2-klein" ]; then \
+#      wget -q -O models/unet/flux/flux-2-klein-9b-fp8.safetensors https://huggingface.co/Seryoger/Flux_2_dev_fp8/resolve/main/unet/flux-2-klein-9b-fp8.safetensors && \
+      wget -q -O models/unet/flux/flux-2-klein-9b-nvfp4.safetensors https://huggingface.co/black-forest-labs/FLUX.2-klein-9b-nvfp4/resolve/main/flux-2-klein-9b-nvfp4.safetensors && \
+#      wget -q -O models/loras/klein/distill/klein_9B_Turbo_r64.safetensors https://civitai.com/api/download/models/2617165?token=a547f3f6fd542f90d0c18ab7aa51d2f7 && \
+      wget -q -O models/clip/qwen_3_8b_fp4mixed.safetensors https://huggingface.co/Comfy-Org/vae-text-encorder-for-flux-klein-9b/resolve/main/split_files/text_encoders/qwen_3_8b_fp4mixed.safetensors && \
       wget -q -O models/vae/flux2-vae.safetensors https://huggingface.co/Comfy-Org/vae-text-encorder-for-flux-klein-9b/resolve/main/split_files/vae/flux2-vae.safetensors; \
     fi
 

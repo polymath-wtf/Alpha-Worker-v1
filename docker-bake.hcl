@@ -14,27 +14,22 @@ variable "COMFYUI_VERSION" {
   default = "latest"
 }
 
-# Global defaults for standard CUDA 12.6.3 images
+# ─── CUDA 13.0 defaults for RTX 5090 (Blackwell) ───
+# NVFP4 quantization requires SM 10.0 + CUDA Runtime >=13.0
+# comfy-kitchen[cublas] CUDA backend requires PyTorch cu130
 variable "BASE_IMAGE" {
-  default = "nvidia/cuda:12.6.3-cudnn-runtime-ubuntu24.04"
-}
-
-variable "CUDA_VERSION_FOR_COMFY" {
-  default = "12.6"
-}
-
-variable "ENABLE_PYTORCH_UPGRADE" {
-  default = "false"
+  default = "nvidia/cuda:13.0.2-cudnn-runtime-ubuntu24.04"
 }
 
 variable "PYTORCH_INDEX_URL" {
-  default = ""
+  default = "https://download.pytorch.org/whl/cu130"
 }
 
 variable "HUGGINGFACE_ACCESS_TOKEN" {
   default = ""
 }
 
+# ─── Build groups ───
 group "default" {
   targets = ["base", "sdxl", "sd3", "flux1-schnell", "flux1-dev", "flux1-dev-fp8", "base-cuda12-8-1"]
 }
