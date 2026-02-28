@@ -98,13 +98,16 @@ RUN uv pip install --force-reinstall "comfy-kitchen[cublas]"
 RUN uv pip install --upgrade triton
 
 # =============================================================================
-# SageAttention 3 — optimized attention for Blackwell (SM 10.0)
+# SageAttention 3 — FP4 Microscaling attention for Blackwell (SM 10.0)
+# Custom-compiled wheel: cu130 + PyTorch 2.10.0 + Python 3.12 + Linux x86_64
+# SA3 uses sageattention3_blackwell kernels — NeurIPS 2025 Spotlight
 # ComfyUI v0.8.0+ supports --use-sage-attention CLI flag
-# Install from PyPI; falls back to source build if no wheel matches
 # =============================================================================
-RUN uv pip install sageattention \
-    && python -c "from sageattention import sageattn; print('SageAttention import OK')" \
-    || echo "WARN: SageAttention import check failed — will try at runtime"
+RUN wget -q -O /tmp/sageattn3.whl \
+      https://huggingface.co/Seryoger/Sageattention-3-cu130-5090-endpoint/resolve/main/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
+    && uv pip install /tmp/sageattn3.whl \
+    && python -c "from sageattention import sageattn; print('SageAttention3 import OK')" \
+    && rm /tmp/sageattn3.whl
 
 # Verify the full stack
 RUN python -c "\
@@ -233,7 +236,7 @@ RUN if [ "$MODEL_TYPE" = "flux1-krea" ]; then \
     fi
 
 RUN if [ "$MODEL_TYPE" = "flux2-klein" ]; then \
-      wget -q --header="Authorization: Bearer ${HUGGINGFACE_ACCESS_TOKEN}" \
+      wget -q --header="Authorization: Bearer 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" \
         -O models/unet/flux/flux-2-klein-9b-nvfp4.safetensors \
         https://huggingface.co/black-forest-labs/FLUX.2-klein-9b-nvfp4/resolve/main/flux-2-klein-9b-nvfp4.safetensors && \
 #      wget -q -O models/loras/klein/distill/klein_9B_Turbo_r64.safetensors https://civitai.com/api/download/models/2617165?token=a547f3f6fd542f90d0c18ab7aa51d2f7 && \
