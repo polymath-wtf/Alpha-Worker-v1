@@ -29,9 +29,13 @@ variable "HUGGINGFACE_ACCESS_TOKEN" {
   default = ""
 }
 
+variable "CIVITAI_ACCESS_TOKEN" {
+  default = ""
+}
+
 # ─── Build groups ───
 group "default" {
-  targets = ["base", "sdxl", "sd3", "flux1-schnell", "flux1-dev", "flux1-dev-fp8", "base-cuda12-8-1"]
+  targets = ["base", "flux2-klein", "Wan_i2v_default", "Wan_i2v_dasiwa"]
 }
 
 target "base" {
@@ -42,110 +46,58 @@ target "base" {
   args = {
     BASE_IMAGE = "${BASE_IMAGE}"
     COMFYUI_VERSION = "${COMFYUI_VERSION}"
-    CUDA_VERSION_FOR_COMFY = "${CUDA_VERSION_FOR_COMFY}"
-    ENABLE_PYTORCH_UPGRADE = "${ENABLE_PYTORCH_UPGRADE}"
     PYTORCH_INDEX_URL = "${PYTORCH_INDEX_URL}"
     MODEL_TYPE = "base"
   }
   tags = ["${DOCKERHUB_REPO}/${DOCKERHUB_IMG}:${RELEASE_VERSION}-base"]
 }
 
-target "sdxl" {
+target "flux2-klein" {
   context = "."
   dockerfile = "Dockerfile"
   target = "final"
-  args = {
-    BASE_IMAGE = "${BASE_IMAGE}"
-    COMFYUI_VERSION = "${COMFYUI_VERSION}"
-    CUDA_VERSION_FOR_COMFY = "${CUDA_VERSION_FOR_COMFY}"
-    ENABLE_PYTORCH_UPGRADE = "${ENABLE_PYTORCH_UPGRADE}"
-    PYTORCH_INDEX_URL = "${PYTORCH_INDEX_URL}"
-    MODEL_TYPE = "sdxl"
-  }
-  tags = ["${DOCKERHUB_REPO}/${DOCKERHUB_IMG}:${RELEASE_VERSION}-sdxl"]
-  inherits = ["base"]
-}
-
-target "sd3" {
-  context = "."
-  dockerfile = "Dockerfile"
-  target = "final"
-  args = {
-    BASE_IMAGE = "${BASE_IMAGE}"
-    COMFYUI_VERSION = "${COMFYUI_VERSION}"
-    CUDA_VERSION_FOR_COMFY = "${CUDA_VERSION_FOR_COMFY}"
-    ENABLE_PYTORCH_UPGRADE = "${ENABLE_PYTORCH_UPGRADE}"
-    PYTORCH_INDEX_URL = "${PYTORCH_INDEX_URL}"
-    MODEL_TYPE = "sd3"
-    HUGGINGFACE_ACCESS_TOKEN = "${HUGGINGFACE_ACCESS_TOKEN}"
-  }
-  tags = ["${DOCKERHUB_REPO}/${DOCKERHUB_IMG}:${RELEASE_VERSION}-sd3"]
-  inherits = ["base"]
-}
-
-target "flux1-schnell" {
-  context = "."
-  dockerfile = "Dockerfile"
-  target = "final"
-  args = {
-    BASE_IMAGE = "${BASE_IMAGE}"
-    COMFYUI_VERSION = "${COMFYUI_VERSION}"
-    CUDA_VERSION_FOR_COMFY = "${CUDA_VERSION_FOR_COMFY}"
-    ENABLE_PYTORCH_UPGRADE = "${ENABLE_PYTORCH_UPGRADE}"
-    PYTORCH_INDEX_URL = "${PYTORCH_INDEX_URL}"
-    MODEL_TYPE = "flux1-schnell"
-    HUGGINGFACE_ACCESS_TOKEN = "${HUGGINGFACE_ACCESS_TOKEN}"
-  }
-  tags = ["${DOCKERHUB_REPO}/${DOCKERHUB_IMG}:${RELEASE_VERSION}-flux1-schnell"]
-  inherits = ["base"]
-}
-
-target "flux1-dev" {
-  context = "."
-  dockerfile = "Dockerfile"
-  target = "final"
-  args = {
-    BASE_IMAGE = "${BASE_IMAGE}"
-    COMFYUI_VERSION = "${COMFYUI_VERSION}"
-    CUDA_VERSION_FOR_COMFY = "${CUDA_VERSION_FOR_COMFY}"
-    ENABLE_PYTORCH_UPGRADE = "${ENABLE_PYTORCH_UPGRADE}"
-    PYTORCH_INDEX_URL = "${PYTORCH_INDEX_URL}"
-    MODEL_TYPE = "flux1-dev"
-    HUGGINGFACE_ACCESS_TOKEN = "${HUGGINGFACE_ACCESS_TOKEN}"
-  }
-  tags = ["${DOCKERHUB_REPO}/${DOCKERHUB_IMG}:${RELEASE_VERSION}-flux1-dev"]
-  inherits = ["base"]
-}
-
-target "flux1-dev-fp8" {
-  context = "."
-  dockerfile = "Dockerfile"
-  target = "final"
-  args = {
-    BASE_IMAGE = "${BASE_IMAGE}"
-    COMFYUI_VERSION = "${COMFYUI_VERSION}"
-    CUDA_VERSION_FOR_COMFY = "${CUDA_VERSION_FOR_COMFY}"
-    ENABLE_PYTORCH_UPGRADE = "${ENABLE_PYTORCH_UPGRADE}"
-    PYTORCH_INDEX_URL = "${PYTORCH_INDEX_URL}"
-    MODEL_TYPE = "flux1-dev-fp8"
-  }
-  tags = ["${DOCKERHUB_REPO}/${DOCKERHUB_IMG}:${RELEASE_VERSION}-flux1-dev-fp8"]
-  inherits = ["base"]
-}
-
-target "base-cuda12-8-1" {
-  context = "."
-  dockerfile = "Dockerfile"
-  target = "base"
   platforms = ["linux/amd64"]
   args = {
-    BASE_IMAGE = "nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04"
+    BASE_IMAGE = "${BASE_IMAGE}"
     COMFYUI_VERSION = "${COMFYUI_VERSION}"
-    CUDA_VERSION_FOR_COMFY = ""
-    ENABLE_PYTORCH_UPGRADE = "true"
-    PYTORCH_INDEX_URL = "https://download.pytorch.org/whl/cu128"
-    MODEL_TYPE = "base"
+    PYTORCH_INDEX_URL = "${PYTORCH_INDEX_URL}"
+    MODEL_TYPE = "flux2-klein"
+    HUGGINGFACE_ACCESS_TOKEN = "${HUGGINGFACE_ACCESS_TOKEN}"
   }
-  tags = ["${DOCKERHUB_REPO}/${DOCKERHUB_IMG}:${RELEASE_VERSION}-base-cuda12.8.1"]
+  tags = ["${DOCKERHUB_REPO}/${DOCKERHUB_IMG}:${RELEASE_VERSION}-flux2-klein"]
+  inherits = ["base"]
+}
+
+target "Wan_i2v_default" {
+  context = "."
+  dockerfile = "Dockerfile"
+  target = "final"
+  platforms = ["linux/amd64"]
+  args = {
+    BASE_IMAGE = "${BASE_IMAGE}"
+    COMFYUI_VERSION = "${COMFYUI_VERSION}"
+    PYTORCH_INDEX_URL = "${PYTORCH_INDEX_URL}"
+    MODEL_TYPE = "Wan_i2v_default"
+    HUGGINGFACE_ACCESS_TOKEN = "${HUGGINGFACE_ACCESS_TOKEN}"
+  }
+  tags = ["${DOCKERHUB_REPO}/${DOCKERHUB_IMG}:${RELEASE_VERSION}-wan-i2v-default"]
+  inherits = ["base"]
+}
+
+target "Wan_i2v_dasiwa" {
+  context = "."
+  dockerfile = "Dockerfile"
+  target = "final"
+  platforms = ["linux/amd64"]
+  args = {
+    BASE_IMAGE = "${BASE_IMAGE}"
+    COMFYUI_VERSION = "${COMFYUI_VERSION}"
+    PYTORCH_INDEX_URL = "${PYTORCH_INDEX_URL}"
+    MODEL_TYPE = "Wan_i2v_dasiwa"
+    HUGGINGFACE_ACCESS_TOKEN = "${HUGGINGFACE_ACCESS_TOKEN}"
+    CIVITAI_ACCESS_TOKEN = "${CIVITAI_ACCESS_TOKEN}"
+  }
+  tags = ["${DOCKERHUB_REPO}/${DOCKERHUB_IMG}:${RELEASE_VERSION}-wan-i2v-dasiwa"]
+  inherits = ["base"]
 }
 
