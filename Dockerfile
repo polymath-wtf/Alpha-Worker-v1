@@ -92,16 +92,22 @@ RUN uv pip install --force-reinstall "comfy-kitchen[cublas]"
 
 # =============================================================================
 # Triton — JIT-compiled kernels (second-priority backend after CUDA)
+# Triton provides: quantize_nvfp4, dequantize_nvfp4 (not scaled_mm_nvfp4),
+# apply_rope, apply_rope1, quantize_per_tensor_fp8, dequantize_per_tensor_fp8
 # =============================================================================
 RUN uv pip install --upgrade triton
 
 # =============================================================================
-# SageAttention — optimized attention for Blackwell (SM 10.0)
+# SageAttention 3 — FP4 Microscaling attention for Blackwell (SM 10.0)
+# Custom-compiled wheel: cu130 + PyTorch 2.10.0 + Python 3.12 + Linux x86_64
+# SA3 uses sageattention3_blackwell kernels — NeurIPS 2025 Spotlight
 # ComfyUI v0.8.0+ supports --use-sage-attention CLI flag
 # =============================================================================
-RUN uv pip install sageattention \
-    && python -c "from sageattention import sageattn; print('SageAttention import OK')" \
-    || echo "WARN: SageAttention import check failed — will try at runtime"
+RUN wget -q -O /tmp/sageattn3.whl \
+      https://huggingface.co/Seryoger/Sageattention-3-cu130-5090-endpoint/resolve/main/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
+    && uv pip install /tmp/sageattn3.whl \
+    && python -c "from sageattention import sageattn; print('SageAttention3 import OK')" \
+    && rm /tmp/sageattn3.whl
 
 # Verify the full stack
 RUN python -c "\
@@ -146,6 +152,7 @@ RUN comfy-node-install \
     comfyui-gguf \
     comfyui-wanvideowrapper \
     comfyui-kjnodes \
+#    comfyui-multigpu \
     comfyui-easy-use \
     was-node-suite-comfyui \
     comfyui-custom-scripts \
@@ -153,6 +160,7 @@ RUN comfy-node-install \
     comfyui_layerstyle \
     comfyui_essentials \
     cg-use-everywhere \
+#    comfyui-tripleksampler \ not in https://registry.comfy.org/ru 
     comfyui-mediamixer \
     comfyui-wanmoeksampler \
     comfyui_ultimatesdupscale \
@@ -236,7 +244,7 @@ RUN if [ "$MODEL_TYPE" = "flux2-klein" ]; then \
       wget -q -O models/vae/flux2-vae.safetensors \
         https://huggingface.co/Comfy-Org/vae-text-encorder-for-flux-klein-9b/resolve/main/split_files/vae/flux2-vae.safetensors; \
     fi
-
+    
 RUN if [ "$MODEL_TYPE" = "z-image-turbo" ]; then \
       wget -q -O models/text_encoders/qwen_3_4b.safetensors https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/text_encoders/qwen_3_4b.safetensors && \
       wget -q -O models/diffusion_models/z_image_turbo_bf16.safetensors https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/diffusion_models/z_image_turbo_bf16.safetensors && \
