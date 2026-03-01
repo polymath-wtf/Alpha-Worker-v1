@@ -88,7 +88,7 @@ RUN uv pip install --force-reinstall \
 # Without [cublas], only eager+triton backends work for NVFP4.
 # comfy-kitchen CUDA wheels require CUDA Runtime >=13.0 and driver r580+.
 # =============================================================================
-RUN uv pip install --force-reinstall "comfy-kitchen[cublas]"
+RUN uv pip install "comfy-kitchen[cublas]"
 
 # =============================================================================
 # Triton — JIT-compiled kernels (second-priority backend after CUDA)
@@ -98,13 +98,18 @@ RUN uv pip install --force-reinstall "comfy-kitchen[cublas]"
 RUN uv pip install --upgrade triton
 
 # =============================================================================
-# SageAttention 3 — optimized attention for Blackwell (SM 10.0)
-# ComfyUI v0.8.0+ supports --use-sage-attention CLI flag
-# Install from PyPI; falls back to source build if no wheel matches
+# SageAttention 3 — FP4 Microscaling attention for Blackwell (SM 10.0)
+# Custom wheel: package="sageattn3", exports sageattn3_blackwell (NOT sageattn)
+# sageattn (SA v1/v2) lives in separate "sageattention" package (Ampere/Hopper)
+# ComfyUI activates SA3 via nodes automatically on SM 10.0 — no CLI flag needed
+# Non-fatal: build continues if import fails (will try again at runtime)
 # =============================================================================
-RUN uv pip install sageattention \
-    && python -c "from sageattention import sageattn; print('SageAttention import OK')" \
-    || echo "WARN: SageAttention import check failed — will try at runtime"
+RUN wget -q -O /tmp/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
+        "https://huggingface.co/Seryoger/Sageattention-3-cu130-5090-endpoint/resolve/main/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl" \
+    && uv pip install /tmp/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
+    && rm -f /tmp/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
+    && python -c "from sageattn3 import sageattn3_blackwell; print('SageAttention3 Blackwell import OK')" \
+    || echo 'WARN: SageAttention3 install/import failed — will retry at runtime'
 
 # Verify the full stack
 RUN python -c "\
@@ -166,18 +171,8 @@ RUN comfy-node-install \
     comfyUI_fizzNodes \
     comfyui-painterfluxImageedit
     
-# Install KJnodes from GitHub (manual comit)
-# RUN git clone https://github.com/polymath-wtf/ComfyUI-Polymath-Vibenodes.git /comfyui/custom_nodes/ComfyUI-Polymath-Vibenodes
 
-#RUN git clone https://github.com/kijai/ComfyUI-KJNodes.git /comfyui/custom_nodes/ComfyUI-KJNodes && \
-#    cd /comfyui/custom_nodes/ComfyUI-KJNodes && \
-#    git checkout 7b1327192e4729085788a3020a9cbb095e0c7811 && \
-#    uv pip install -r requirements.txt
-    # Install ComfyUI-WanVideoWrapper SVI commit
-#RUN git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git /comfyui/custom_nodes/ComfyUI-WanVideoWrapper && \
-#    cd /comfyui/custom_nodes/ComfyUI-WanVideoWrapper && \
-#    git checkout f28e7da442b03fa32918e0251ceb403e80fedf1d && \
-#    uv pip install -r requirements.txt
+# RUN git clone https://github.com/polymath-wtf/ComfyUI-Polymath-Vibenodes.git /comfyui/custom_nodes/ComfyUI-Polymath-Vibenodes
 
 # Copy helper script to switch Manager network mode at container start
 COPY scripts/comfy-manager-set-mode.sh /usr/local/bin/comfy-manager-set-mode
@@ -192,7 +187,7 @@ FROM base AS downloader
 ARG HUGGINGFACE_ACCESS_TOKEN
 ARG CIVITAI_ACCESS_TOKEN
 # Set default model type if none is provided
-ARG MODEL_TYPE=flux2-klein
+ARG MODEL_TYPE=flux2-klein-nvfp4
 
 # Change working directory to ComfyUI
 WORKDIR /comfyui
@@ -230,10 +225,9 @@ RUN if [ "$MODEL_TYPE" = "flux1-krea" ]; then \
       wget -q -O models/vae/ae.safetensors https://huggingface.co/Seryoger/Parique_v1/resolve/main/ae.safetensors; \
     fi
 
-RUN if [ "$MODEL_TYPE" = "flux2-klein" ]; then \
-       wget -q -O models/unet/flux/flux-2-klein-9b-nvfp4.safetensors \
+RUN if [ "$MODEL_TYPE" = "flux2-klein-nvfp4" ]; then \
+      wget -q -O models/unet/flux/flux-2-klein-9b-nvfp4.safetensors \
         https://huggingface.co/Seryoger/Sageattention-3-cu130-5090-endpoint/resolve/main/flux-2-klein-9b-nvfp4.safetensors && \
-#      wget -q -O models/loras/klein/distill/klein_9B_Turbo_r64.safetensors https://civitai.com/api/download/models/2617165?token=a547f3f6fd542f90d0c18ab7aa51d2f7 && \
       wget -q -O models/clip/qwen_3_8b_fp4mixed.safetensors \
         https://huggingface.co/Comfy-Org/vae-text-encorder-for-flux-klein-9b/resolve/main/split_files/text_encoders/qwen_3_8b_fp4mixed.safetensors && \
       wget -q -O models/vae/flux2-vae.safetensors \

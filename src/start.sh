@@ -31,9 +31,9 @@ backends = ck.list_backends(); \
 print(f'comfy-kitchen backends: {backends}'); \
 " 2>&1 || echo "worker-comfyui - WARN: comfy-kitchen backend check failed"
 
-# SageAttention check
-python -c "from sageattention import sageattn; print('SageAttention: OK')" 2>&1 \
-    || echo "worker-comfyui - WARN: SageAttention not available, falling back to pytorch attention"
+# SageAttention 3 check (Blackwell FP4 Microscaling)
+python -c "from sageattn3 import sageattn3_blackwell; print('SageAttention3 Blackwell: OK')" 2>&1 \
+    || echo "worker-comfyui - WARN: SageAttention3 not available, ComfyUI will use pytorch SDPA suka blyat"
 
 # ── ComfyUI Launch Args ─────────────────────────────────────────────────────
 # Allow operators to tweak verbosity; default is DEBUG.
@@ -44,8 +44,8 @@ python -c "from sageattention import sageattn; print('SageAttention: OK')" 2>&1 
 #   --reserve-vram 1      — reserve 1GB for OS/driver overhead
 #   --disable-smart-memory — let ComfyUI handle memory without heuristics
 #   --disable-metadata    — skip embedding metadata in output files
-#   --use-sage-attention  — use SageAttention 3 kernels (Blackwell-optimized)
-COMFY_ARGS="--disable-auto-launch --normalvram --reserve-vram 1 --disable-metadata --use-sage-attention --verbose ${COMFY_LOG_LEVEL} --log-stdout"
+#   SA3 is activated via ComfyUI nodes automatically on SM 10.0 — no CLI flag needed
+COMFY_ARGS="--disable-auto-launch --normalvram --reserve-vram 1 --disable-metadata --verbose ${COMFY_LOG_LEVEL} --log-stdout"
 
 # Serve the API and don't shutdown the container
 if [ "$SERVE_API_LOCALLY" == "true" ]; then
