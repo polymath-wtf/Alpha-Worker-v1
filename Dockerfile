@@ -109,20 +109,43 @@ RUN wget -q -O /tmp/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
         "https://huggingface.co/Seryoger/Sageattention-3-cu130-5090-endpoint/resolve/main/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl" \
     && uv pip install /tmp/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
     && rm -f /tmp/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
-    && python -c "from sageattn3 import sageattn3_blackwell; print('sageattn3 FP4 kernel: OK')" \
+    && python -c "from sageattn3 import sageattn3_blackwell; print('sageattn3 FP4 kernel blackwell installed: OK')" \
     || { echo 'ERROR: sageattn3 install/import failed'; exit 1; }
 
-# sageattention shim — KJNodes unconditionally does `from sageattention import sageattn`
-# even in sageattn3 mode (line 27, before any if/elif). We install a real pip package
-# named sageattention that routes all calls to sageattn3_blackwell.
-RUN mkdir -p /tmp/sageattention-shim/sageattention \
-    && printf '[build-system]\nrequires = ["setuptools"]\nbuild-backend = "setuptools.backends.legacy:build"\n[project]\nname = "sageattention"\nversion = "3.0.0.post1"\n' \
-       > /tmp/sageattention-shim/pyproject.toml \
-    && printf 'from sageattn3 import sageattn3_blackwell as _sa3\n\ndef sageattn(q, k, v, is_causal=False, attn_mask=None, tensor_layout="NHD", **kwargs):\n    if tensor_layout == "NHD":\n        q, k, v = q.transpose(1, 2), k.transpose(1, 2), v.transpose(1, 2)\n        out = _sa3(q, k, v, is_causal=is_causal, attn_mask=attn_mask)\n        return out.transpose(1, 2)\n    return _sa3(q, k, v, is_causal=is_causal, attn_mask=attn_mask)\n\nsageattn_qk_int8_pv_fp16_cuda = sageattn\nsageattn_qk_int8_pv_fp8_cuda = sageattn\nsageattn_qk_int8_pv_fp16_triton = sageattn\n__version__ = "3.0.0-shim"\n' \
-       > /tmp/sageattention-shim/sageattention/__init__.py \
-    && uv pip install /tmp/sageattention-shim \
-    && rm -rf /tmp/sageattention-shim \
-    && python -c "from sageattention import sageattn; print('sageattention shim: OK')"
+# Создаем директорию модуля в site-packages
+RUN mkdir -p /opt/venv/lib/python3.12/site-packages/sageattention
+
+# Записываем правильный код shim с пробросом аргументов в файл __init__.py
+RUN cat <<'EOF' > /opt/venv/lib/python3.12/site-packages/sageattention/__init__.py
+from sageattn3 import sageattn3_blackwell as _sa3
+
+def sageattn(q, k, v, is_causal=False, attn_mask=None, tensor_layout="NHD", **kwargs):
+    # Собираем аргументы, которые безопасно передать в sageattn3
+    call_kwargs = {'is_causal': is_causal}
+    if attn_mask is not None:
+        call_kwargs['attn_mask'] = attn_mask
+    
+    # Обязательно пробрасываем sm_scale (и любые другие нужные параметры), если они есть
+    if 'sm_scale' in kwargs:
+        call_kwargs['sm_scale'] = kwargs['sm_scale']
+
+    # Обработка лейаута тензоров (NHD -> HND)
+    if tensor_layout == "NHD":
+        q, k, v = q.transpose(1, 2), k.transpose(1, 2), v.transpose(1, 2)
+        out = _sa3(q, k, v, **call_kwargs)
+        return out.transpose(1, 2)
+        
+    return _sa3(q, k, v, **call_kwargs)
+
+sageattn_qk_int8_pv_fp16_cuda = sageattn
+sageattn_qk_int8_pv_fp8_cuda = sageattn
+sageattn_qk_int8_pv_fp16_triton = sageattn
+__version__ = "3.0.0-shim"
+EOF
+
+# Проверяем, что Python корректно видит наш новый модуль
+RUN python -c "from sageattention import sageattn; print('sageattention shim: OK zbs')"
+
 
 # Verify the full stack
 RUN python -c "\
