@@ -100,9 +100,10 @@ RUN uv pip install --upgrade triton
 
 # =============================================================================
 # SageAttention3 (FP4 Blackwell, SM 10.0)
-# ComfyUI master imports sageattn3 directly (comfy/ldm/modules/attention.py):
-#   from sageattn3 import sageattn3_blackwell
-# No shim needed. Activated via KJNodes attention_function="sage3" in workflow.
+# ComfyUI attention.py imports sageattn3 directly → no shim needed there.
+# BUT KJNodes model_optimization_nodes.py line 27 always does:
+#   from sageattention import sageattn   ← unconditional, even for sageattn3 mode
+# So we create a minimal inline sageattention shim that routes to sageattn3_blackwell.
 # =============================================================================
 RUN wget -q -O /tmp/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
         "https://huggingface.co/Seryoger/Sageattention-3-cu130-5090-endpoint/resolve/main/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl" \
@@ -110,6 +111,17 @@ RUN wget -q -O /tmp/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
     && rm -f /tmp/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
     && python -c "from sageattn3 import sageattn3_blackwell; print('sageattn3 FP4 kernel: OK')" \
     || { echo 'ERROR: sageattn3 install/import failed'; exit 1; }
+
+# Inline sageattention shim — satisfies KJNodes' unconditional import
+# Routes sageattn → sageattn3_blackwell (FP4 kernel), exports all aliases KJNodes uses
+RUN python -c "\
+import site, os; \
+d = os.path.join(site.getsitepackages()[0], 'sageattention'); \
+os.makedirs(d, exist_ok=True); \
+open(os.path.join(d, '__init__.py'), 'w').write('''from sageattn3 import sageattn3_blackwell as _sa3\ndef sageattn(q, k, v, is_causal=False, attn_mask=None, tensor_layout=\"NHD\", **kwargs):\n    if tensor_layout == \"NHD\":\n        q, k, v = q.transpose(1, 2), k.transpose(1, 2), v.transpose(1, 2)\n        out = _sa3(q, k, v, is_causal=is_causal, attn_mask=attn_mask)\n        return out.transpose(1, 2)\n    return _sa3(q, k, v, is_causal=is_causal, attn_mask=attn_mask)\nsageattn_qk_int8_pv_fp16_cuda = sageattn\nsageattn_qk_int8_pv_fp8_cuda = sageattn\nsageattn_qk_int8_pv_fp16_triton = sageattn\n__version__ = \"3.0.0-shim\"\n'''); \
+print('sageattention shim written'); \
+" \
+    && python -c "from sageattention import sageattn; print('sageattention shim: OK')"
 
 # Verify the full stack
 RUN python -c "\
