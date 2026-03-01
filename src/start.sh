@@ -32,8 +32,8 @@ print(f'comfy-kitchen backends: {backends}'); \
 " 2>&1 || echo "worker-comfyui - WARN: comfy-kitchen backend check failed"
 
 # SageAttention3 check — ComfyUI imports sageattn3 directly, activates via KJNodes sage3
-python -c "from sageattn3 import sageattn3_blackwell; print('SageAttention3 (FP4 Blackwell): OK')" 2>&1 \
-    || echo "worker-comfyui - WARN: sageattn3 not available, ComfyUI will use pytorch SDPA SUKA BLYAT"
+python -c "from sageattn3 import sageattn3_blackwell; print('SageAttention3 (FP4 Blackwell): OK ZBS')" 2>&1 \
+    || echo "worker-comfyui - WARN: sageattn3 not available, ComfyUI will use SUKA BLYAT"
 
 # ── ComfyUI Launch Args ─────────────────────────────────────────────────────
 # Allow operators to tweak verbosity; default is DEBUG.
@@ -45,7 +45,8 @@ python -c "from sageattn3 import sageattn3_blackwell; print('SageAttention3 (FP4
 #   --disable-smart-memory — let ComfyUI handle memory without heuristics
 #   --disable-metadata    — skip embedding metadata in output files
 #   sageattn3 activated per-workflow via KJNodes attention_function="sage3" node
-COMFY_ARGS="--disable-auto-launch --normalvram --reserve-vram 1 --disable-metadata --verbose ${COMFY_LOG_LEVEL} --log-stdout"
+
+COMFY_ARGS="--disable-auto-launch --highvram --reserve-vram 1 --disable-metadata --verbose ${COMFY_LOG_LEVEL} --log-stdout"
 
 # Serve the API and don't shutdown the container
 if [ "$SERVE_API_LOCALLY" == "true" ]; then
