@@ -31,9 +31,9 @@ backends = ck.list_backends(); \
 print(f'comfy-kitchen backends: {backends}'); \
 " 2>&1 || echo "worker-comfyui - WARN: comfy-kitchen backend check failed"
 
-# SageAttention 3 check (Blackwell FP4 Microscaling)
-python -c "from sageattn3 import sageattn3_blackwell; print('SageAttention3 Blackwell: OK')" 2>&1 \
-    || echo "worker-comfyui - WARN: SageAttention3 not available, ComfyUI will use pytorch SDPA suka blyat"
+# SageAttention3 check — ComfyUI imports sageattn3 directly, activates via KJNodes sage3
+python -c "from sageattn3 import sageattn3_blackwell; print('SageAttention3 (FP4 Blackwell): OK')" 2>&1 \
+    || echo "worker-comfyui - WARN: sageattn3 not available, ComfyUI will use pytorch SDPA SUKA BLYAT"
 
 # ── ComfyUI Launch Args ─────────────────────────────────────────────────────
 # Allow operators to tweak verbosity; default is DEBUG.
@@ -44,7 +44,7 @@ python -c "from sageattn3 import sageattn3_blackwell; print('SageAttention3 Blac
 #   --reserve-vram 1      — reserve 1GB for OS/driver overhead
 #   --disable-smart-memory — let ComfyUI handle memory without heuristics
 #   --disable-metadata    — skip embedding metadata in output files
-#   SA3 is activated via ComfyUI nodes automatically on SM 10.0 — no CLI flag needed
+#   sageattn3 activated per-workflow via KJNodes attention_function="sage3" node
 COMFY_ARGS="--disable-auto-launch --normalvram --reserve-vram 1 --disable-metadata --verbose ${COMFY_LOG_LEVEL} --log-stdout"
 
 # Serve the API and don't shutdown the container
@@ -59,4 +59,3 @@ else
     echo "worker-comfyui: Starting RunPod Handler"
     python -u /handler.py
 fi
-

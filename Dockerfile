@@ -99,18 +99,17 @@ RUN uv pip install "comfy-kitchen[cublas]"
 RUN uv pip install --upgrade triton
 
 # =============================================================================
-# SageAttention 3 — FP4 Microscaling attention for Blackwell (SM 10.0)
-# Custom wheel: package="sageattn3", exports sageattn3_blackwell (NOT sageattn)
-# sageattn (SA v1/v2) lives in separate "sageattention" package (Ampere/Hopper)
-# ComfyUI activates SA3 via nodes automatically on SM 10.0 — no CLI flag needed
-# Non-fatal: build continues if import fails (will try again at runtime)
+# SageAttention3 (FP4 Blackwell, SM 10.0)
+# ComfyUI master imports sageattn3 directly (comfy/ldm/modules/attention.py):
+#   from sageattn3 import sageattn3_blackwell
+# No shim needed. Activated via KJNodes attention_function="sage3" in workflow.
 # =============================================================================
 RUN wget -q -O /tmp/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
         "https://huggingface.co/Seryoger/Sageattention-3-cu130-5090-endpoint/resolve/main/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl" \
     && uv pip install /tmp/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
     && rm -f /tmp/sageattn3-1.0.0-cp312-cp312-linux_x86_64.whl \
-    && python -c "from sageattn3 import sageattn3_blackwell; print('SageAttention3 Blackwell import OK')" \
-    || echo 'WARN: SageAttention3 install/import failed — will retry at runtime'
+    && python -c "from sageattn3 import sageattn3_blackwell; print('sageattn3 FP4 kernel: OK')" \
+    || { echo 'ERROR: sageattn3 install/import failed'; exit 1; }
 
 # Verify the full stack
 RUN python -c "\
@@ -121,6 +120,8 @@ print(f'CUDA version: {torch.version.cuda}'); \
 import comfy_kitchen as ck; \
 backends = ck.list_backends(); \
 print(f'comfy-kitchen backends: {backends}'); \
+from sageattn3 import sageattn3_blackwell; \
+print('sageattn3: OK'); \
 "
 
 # Change working directory to ComfyUI
